@@ -1,0 +1,79 @@
+body {
+    background-color: white;
+    padding: 0;
+    margin: 1%;
+    display: grid;
+    align-content: center;
+    justify-content: center;
+}
+
+h1 {
+    font-family: Helvetica, sans-serif;
+    font-weight: 900;
+    font-size: 3em;
+    color: black;
+}
+
+h2 {
+    font-family: Helvetica, sans-serif;
+    font-weight: 700;
+    font-size: larger;
+    color: black;
+}
+
+p {
+    font-family: Helvetica, sans-serif;
+    color: black;
+}
+
+li {
+    font-family: Helvetica, sans-serif;
+    color: black;
+    width: 50%;
+}
+
+hr {
+    color: black;
+}
+
+#playButton {
+    font-size: 12rem;
+}
+
+#aboutButton {
+    font-size: 8rem;
+}
+
+#instructionsButton {
+    font-size: 4rem;
+}
+
+#home {
+    font-size: 4rem;
+}
+
+a:link {
+    background-color: black;
+    color:white;
+    text-decoration: none;
+    font-family: Cochin, Georgia, Times, 'Times New Roman', serif;
+    padding: 10px;
+    text-align: center;
+}
+
+a:visited {
+    color:white;
+}
+
+a:focus {
+    color: powderblue;
+}
+
+a:hover {
+    color: powderblue;
+}
+
+a:active {
+    color:white;
+    background-color: powderblue;
+}
