@@ -1,1 +1,1 @@
-require('./app/index');
+import './app/index.js';

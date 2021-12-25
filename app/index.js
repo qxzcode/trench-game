@@ -1,11 +1,15 @@
-const express = require('express');
-const path = require('path');
+import express from 'express';
+import expressWs from 'express-ws';
+import path from 'path';
 
 const app = express();
-const expressWs = require('express-ws')(app);
+expressWs(app);
 
-// Serve static files from the ../client/ directory
-app.use(express.static(path.join(__dirname, '..', 'client')));
+import { Game } from './game.js';
+const game = new Game();
+
+// Serve static files from the <project_root>/client/ directory
+app.use(express.static('client'));
 
 // Serve the websocket server on the /ws path
 app.ws('/ws', (socket, request) => {
