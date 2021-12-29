@@ -1,5 +1,9 @@
 "use strict";
 
+async function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // #region starting with utility scripts taken from the IGME 235 Circle Blast homework - credit to the course developers!
 
 // bounding box collision detection - it compares PIXI.Rectangles

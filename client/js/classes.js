@@ -117,6 +117,8 @@ class HealthKit extends PIXI.Sprite {
         super(app.loader.resources["healthKit"].texture);
         this.anchor.set(.5, .5); // position, scaling, rotating etc are now from center of sprite
         this.scale.set(0.1);
+        this.x = x;
+        this.y = y;
         //this.beginFill(0xFFFFFF);
         //this.lineStyle(4, 0xAC535D, 1);
         //this.moveTo(x, y + 9);
@@ -171,7 +173,9 @@ class Wall extends PIXI.Sprite {
     constructor(width, height, x, y) {
         super(app.loader.resources["wall"].texture);
         this.anchor.set(.5, .5); // position, scaling, rotating etc are now from center of sprite
-        this.scale.set(width, height);
+        this.width = height;
+        this.height = width;
+        this.angle = getEvenOdd() ? 90 : -90;
         this.x = x;
         this.y = y;
         //this.lineStyle(2, 0x000000, 1);

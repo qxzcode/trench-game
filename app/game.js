@@ -21,6 +21,19 @@ export class Game {
         this.circles = [];
         this.squares = [];
         makeTeam(this.circles, this, 'circles', 2, 10, 0, leftQuarterLine);
-        makeTeam(this.squares, this, 'squares', 2, 10, rightQuarterLine, sceneWidth)
+        makeTeam(this.squares, this, 'squares', 2, 10, rightQuarterLine, sceneWidth);
+    }
+
+    /**
+     * Returns a JSON-serializable representation of the game.
+     */
+    toJSON() {
+        return {
+            trenches: this.trenches.map(trench => trench.toJSON()),
+            walls: this.walls.map(wall => wall.toJSON()),
+            healthKits: this.healthKits.map(healthKit => healthKit.toJSON()),
+            circles: this.circles.map(circle => circle.toJSON()),
+            squares: this.squares.map(square => square.toJSON()),
+        };
     }
 }

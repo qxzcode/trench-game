@@ -1,6 +1,37 @@
 "use strict";
 
 
+// open the WebSocket connection
+const ws = new WebSocket('ws://' + window.location.host + '/ws');
+ws.addEventListener('open', () => {
+    console.log('WebSocket connection opened');
+});
+
+ws.addEventListener('message', (event) => {
+    const { type, data } = JSON.parse(event.data);
+    console.log(`Received message (type: ${type}):`, data);
+    //...
+});
+
+function sendMessage(message) {
+    ws.send(JSON.stringify(message));
+}
+
+function sendAndGetReply(message, replyType) {
+    sendMessage(message);
+    return new Promise((resolve) => {
+        function onMessage(event) {
+            const { type, data } = JSON.parse(event.data);
+            if (type === replyType) {
+                ws.removeEventListener('message', onMessage);
+                resolve(data);
+            }
+        }
+        ws.addEventListener('message', onMessage);
+    });
+}
+
+
 const windowWidth = window.innerWidth;
 const windowHeight = window.innerHeight;
 
@@ -352,15 +383,27 @@ function createTip(scene, tips)
 }
 
 // creates the main title scene and hides the tip scene
-function rollTitles(scene, text) {
+async function rollTitles(scene, text) {
+    // request the game data from the server
+    const gameDataPromise = sendAndGetReply({ type: "start" }, "init");
+
     tipScene.visible = false;
     titleScene.visible = true;
     introSound.play();
-    setTimeout(() => {
-        titleCenterText = bigText(scene, text);
-    }, 1500);
-    setTimeout(clearTitleText, 3500);
-    setTimeout(startGame, 4000);
+    await wait(1500);
+    titleCenterText = bigText(scene, text);
+    await wait(2000);
+    clearTitleText();
+    await wait(500);
+
+    // initialize the game using the server response
+    const gameData = await gameDataPromise;
+    trenches = gameData.trenches.map(trench => new Trench(trench.x));
+    walls = gameData.walls.map(wall => new Wall(wall.width, wall.height, wall.x, wall.y));
+    healthKits = gameData.healthKits.map(healthKit => new HealthKit(healthKit.x, healthKit.y));
+    circles = gameData.circles.map(circle => new Circle(circle.status, circle.x, circle.y));
+    squares = gameData.squares.map(square => new Square(square.status, square.x, square.y));
+    startGame();
 }
 
 // hides the titles and opens up the game scene
@@ -371,7 +414,7 @@ function startGame() {
     loadLevel();
     coinFlip = getEvenOdd();
     newTurn();
-    
+
     // start update loop
     app.ticker.add(gameLoop);
 }
@@ -472,29 +515,25 @@ function clearToolTips()
 
 // #region level loading
 
-// calls functions from generator.js to create random objects, then populates the scene with the new objects
+/**
+ * Populates the scene with the game objects.
+ * The various arrays should be populated with game data (from the server) prior
+ * to calling this function.
+ */
 function loadLevel() {
-    makeTrenches(trenches);
-    for (let t of trenches)
-    {
+    for (let t of trenches) {
         gameScene.addChild(t);
     }
 
-    makeWalls(walls, 5, leftQuarterLine, rightQuarterLine);
-    for (let w of walls)
-    {
+    for (let w of walls) {
         gameScene.addChild(w);
     }
 
-    makeHealthKits(healthKits, 10, 0, sceneWidth);
-    for (let k of healthKits)
-    {
+    for (let k of healthKits) {
         gameScene.addChild(k);
     }
 
-    makeTeam(circles, Circle, 2, 10, 0, leftQuarterLine);
-    for (let c of circles)
-    {
+    for (let c of circles) {
         gameScene.addChild(c);
         c.interactive = true;
         c.buttonMode = true;
@@ -504,9 +543,7 @@ function loadLevel() {
         c.zIndex = 10;
     }
 
-    makeTeam(squares, Square, 2, 10, rightQuarterLine, sceneWidth)
-    for (let sq of squares)
-    {
+    for (let sq of squares) {
         gameScene.addChild(sq);
         sq.interactive = true;
         sq.buttonMode = true;
@@ -606,7 +643,7 @@ function moveSelected(x, y) {
 }
 
 // moves the selected character, which must be a general for this to work, and any other regular characters around it
-// also calls valid position checks and resolutions from utilities.js to make the other characters move like they're smart 
+// also calls valid position checks and resolutions from utilities.js to make the other characters move like they're smart
 function moveGroupAroundCharacter(army, x, y) {
     let generalX = selectedCharacter.x;
     let generalY = selectedCharacter.y;

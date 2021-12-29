@@ -37,7 +37,6 @@ export class Soldier extends Entity {
         this.health = 2;
         this.trench = false;
         this.alive = true;
-        this.selected = false;
     }
 
     heal() {
@@ -46,6 +45,18 @@ export class Soldier extends Entity {
 
     damage() {
         this.health--;
+    }
+
+    toJSON() {
+        return {
+            x: this.x,
+            y: this.y,
+            team: this.team,
+            status: this.status,
+            health: this.health,
+            trench: this.trench,
+            alive: this.alive,
+        };
     }
 }
 
@@ -58,6 +69,13 @@ export class HealthKit extends Entity {
         const size = 192 * 0.1;
         super(x, y, size, size);
         this.isActive = true;
+    }
+
+    toJSON() {
+        return {
+            x: this.x,
+            y: this.y,
+        };
     }
 }
 
@@ -88,12 +106,27 @@ export class Trench extends Entity {
     constructor(x) {
         super(x, 720 / 2, 120, 720);
     }
+
+    toJSON() {
+        return {
+            x: this.x,
+        };
+    }
 }
 
 export class Wall extends Entity {
     constructor(width, height, x, y) {
         // width and height are swapped to rotate the wall 90 degrees
         super(x, y, height * 192, width * 960);
+    }
+
+    toJSON() {
+        return {
+            x: this.x,
+            y: this.y,
+            width: this.width,
+            height: this.height,
+        };
     }
 }
 
