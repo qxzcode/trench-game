@@ -1,5 +1,5 @@
 import { sceneWidth, sceneHeight, leftQuarterLine, verticalMidline, rightQuarterLine } from './constants.js';
-import { getRandom, getEvenOdd, clamp, checkValidCharacterPosition, checkValidWallPosition, checkValidHealthKitPosition } from './utilities.js';
+import { getRandom, getEvenOdd, clamp, isValidCharacterPosition, isValidWallPosition, isValidHealthKitPosition } from './utilities.js';
 import { Soldier, Wall, HealthKit, Trench } from './entities.js';
 
 export function makeTeam(array, game, team, generalsAmount, soldiersAmount, minX, maxX)
@@ -12,11 +12,11 @@ export function makeTeam(array, game, team, generalsAmount, soldiersAmount, minX
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight);
         let newGeneral = new Soldier(team, "general", x, y);
-        let valid = checkValidCharacterPosition(newGeneral, game);
+        let valid = isValidCharacterPosition(newGeneral, game);
         while (valid == false) {
             newGeneral.x = getRandom(minX, maxX);
             newGeneral.y = getRandom(0, sceneHeight);
-            valid = checkValidCharacterPosition(newGeneral, game);
+            valid = isValidCharacterPosition(newGeneral, game);
         }
         let w2 = newGeneral.width / 2;
         let h2 = newGeneral.height / 2;
@@ -31,11 +31,11 @@ export function makeTeam(array, game, team, generalsAmount, soldiersAmount, minX
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight);
         let newSoldier = new Soldier(team, "regular", x, y);
-        let valid = checkValidCharacterPosition(newSoldier, game);
+        let valid = isValidCharacterPosition(newSoldier, game);
         while (valid == false) {
             newSoldier.x = getRandom(minX, maxX);
             newSoldier.y = getRandom(0, sceneHeight);
-            valid = checkValidCharacterPosition(newSoldier, game);
+            valid = isValidCharacterPosition(newSoldier, game);
         }
         let w2 = newSoldier.width / 2;
         let h2 = newSoldier.height / 2;
@@ -67,11 +67,11 @@ export function makeWalls(game, amount, minX, maxX)
         let newWall = new Wall(width, height, x, y);
 
         // check for acceptable position
-        let valid = checkValidWallPosition(newWall, game);
+        let valid = isValidWallPosition(newWall, game);
         while (valid == false) {
             newWall.x = getRandom(minX, maxX);
             newWall.y = getRandom(0, sceneHeight);
-            valid = checkValidWallPosition(newWall, game);
+            valid = isValidWallPosition(newWall, game);
         }
 
         // keep in bounds
@@ -99,11 +99,11 @@ export function makeHealthKits(game, amount, minX, maxX)
         let newKit = new HealthKit(x, y);
 
         // check for acceptable position
-        let valid = checkValidHealthKitPosition(newKit, game);
+        let valid = isValidHealthKitPosition(newKit, game);
         while (valid == false) {
             newKit.x = getRandom(minX, maxX);
             newKit.y = getRandom(0, sceneHeight);
-            valid = checkValidHealthKitPosition(newKit, game);
+            valid = isValidHealthKitPosition(newKit, game);
         }
 
         // keep in bounds
