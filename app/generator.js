@@ -1,10 +1,19 @@
 import { sceneWidth, sceneHeight, leftQuarterLine, verticalMidline, rightQuarterLine } from './constants.js';
 import { getRandom, getEvenOdd, clamp, isValidCharacterPosition, isValidWallPosition, isValidHealthKitPosition } from './utilities.js';
 import { Soldier, Wall, HealthKit, Trench } from './entities.js';
+import { Game } from './game.js';
 
-export function makeTeam(array, game, team, generalsAmount, soldiersAmount, minX, maxX)
+/**
+ * @param {Game} game
+ * @param {'circles'|'squares'} team
+ * @param {number} generalsAmount
+ * @param {number} soldiersAmount
+ * @param {number} minX
+ * @param {number} maxX
+ */
+export function makeTeam(game, team, generalsAmount, soldiersAmount, minX, maxX)
 {
-    let army = array;
+    let army = [];
 
     // generals
     for (let i = 0; i < generalsAmount; i++)
@@ -43,11 +52,19 @@ export function makeTeam(array, game, team, generalsAmount, soldiersAmount, minX
         newSoldier.y = clamp(y, 0 + h2, sceneHeight - h2);
         army.push(newSoldier);
     }
+
+    return army;
 }
 
+/**
+ * @param {Game} game
+ * @param {number} amount
+ * @param {number} minX
+ * @param {number} maxX
+ */
 export function makeWalls(game, amount, minX, maxX)
 {
-    let wallArray = game.walls;
+    let wallArray = [];
 
     for (let i = 0; i < amount; i++)
     {
@@ -83,11 +100,19 @@ export function makeWalls(game, amount, minX, maxX)
         // bring into the world
         wallArray.push(newWall);
     }
+
+    return wallArray;
 }
 
+/**
+ * @param {Game} game
+ * @param {number} amount
+ * @param {number} minX
+ * @param {number} maxX
+ */
 export function makeHealthKits(game, amount, minX, maxX)
 {
-    let kitArray = game.healthKits;
+    let kitArray = [];
 
     for (let i = 0; i < amount; i++)
     {
@@ -115,23 +140,25 @@ export function makeHealthKits(game, amount, minX, maxX)
         // bring into the world
         kitArray.push(newKit);
     }
+
+    return kitArray;
 }
 
-export function makeTrenches(array)
+export function makeTrenches()
 {
-    let trenchArray = array;
+    let trenchArray = [];
 
     let minX = leftQuarterLine;
     let maxX = verticalMidline - 25;
     let x = getRandom(minX, maxX);
-
     let newTrench = new Trench(x);
     trenchArray.push(newTrench);
 
     minX = verticalMidline + 25;
     maxX = rightQuarterLine;
     x = getRandom(minX, maxX);
-
     newTrench = new Trench(x);
     trenchArray.push(newTrench);
+
+    return trenchArray;
 }

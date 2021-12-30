@@ -9,19 +9,14 @@ export class Game {
      * Generates a new game level.
      */
     constructor() {
-        this.trenches = [];
-        makeTrenches(this.trenches);
+        this.trenches = makeTrenches();
 
-        this.walls = [];
-        makeWalls(this, 5, leftQuarterLine, rightQuarterLine);
+        this.walls = makeWalls(this, 5, leftQuarterLine, rightQuarterLine);
 
-        this.healthKits = [];
-        makeHealthKits(this, 10, 0, sceneWidth);
+        this.healthKits = makeHealthKits(this, 10, 0, sceneWidth);
 
-        this.circles = [];
-        this.squares = [];
-        makeTeam(this.circles, this, 'circles', 2, 10, 0, leftQuarterLine);
-        makeTeam(this.squares, this, 'squares', 2, 10, rightQuarterLine, sceneWidth);
+        this.circles = makeTeam(this, 'circles', 2, 10, 0, leftQuarterLine);
+        this.squares = makeTeam(this, 'squares', 2, 10, rightQuarterLine, sceneWidth);
     }
 
     /**

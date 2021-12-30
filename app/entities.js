@@ -28,6 +28,8 @@ export class Soldier extends Entity {
     /**
      * @param {'circles'|'squares'} team
      * @param {'general'|'regular'} status
+     * @param {number} x
+     * @param {number} y
      */
     constructor(team, status, x = 0, y = 0) {
         const size = 256 * 0.1;
@@ -65,6 +67,10 @@ export class Soldier extends Entity {
 // #region interactables
 
 export class HealthKit extends Entity {
+    /**
+     * @param {number} x
+     * @param {number} y
+     */
     constructor(x, y) {
         const size = 192 * 0.1;
         super(x, y, size, size);
@@ -80,6 +86,13 @@ export class HealthKit extends Entity {
 }
 
 export class Bullet {
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @param {{ x: number, y: number }} forward
+     * @param {'circles'|'squares'} team
+     * @param {boolean} trench
+     */
     constructor(x, y, forward, team, trench) {
         this.x = x;
         this.y = y;
@@ -103,6 +116,9 @@ export class Bullet {
 // #region environment
 
 export class Trench extends Entity {
+    /**
+     * @param {number} x
+     */
     constructor(x) {
         super(x, 720 / 2, 120, 720);
     }
@@ -115,6 +131,12 @@ export class Trench extends Entity {
 }
 
 export class Wall extends Entity {
+    /**
+     * @param {number} width
+     * @param {number} height
+     * @param {number} x
+     * @param {number} y
+     */
     constructor(width, height, x, y) {
         // width and height are swapped to rotate the wall 90 degrees
         super(x, y, height * 192, width * 960);

@@ -73,8 +73,8 @@ app.loader.load();
 // #region fields
 
 // constants
-const sceneWidth = (windowWidth * 0.95).toFixed(0);
-const sceneHeight = (windowHeight * 0.95).toFixed(0);
+const sceneWidth = Math.round(windowWidth * 0.95);
+const sceneHeight = Math.round(windowHeight * 0.95);
 const verticalMidline = sceneWidth / 2;
 const horizontalMidline = sceneHeight / 2;
 const leftQuarterLine = sceneWidth / 4;
