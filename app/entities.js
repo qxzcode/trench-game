@@ -26,14 +26,16 @@ export class Entity {
 
 export class Soldier extends Entity {
     /**
+     * @param {number} id
      * @param {'circles'|'squares'} team
      * @param {'general'|'regular'} status
      * @param {number} x
      * @param {number} y
      */
-    constructor(team, status, x = 0, y = 0) {
+    constructor(id, team, status, x = 0, y = 0) {
         const size = 256 * 0.1;
         super(x, y, size, size);
+        this.id = id;
         this.team = team;
         this.status = status;
         this.health = 2;
@@ -53,6 +55,7 @@ export class Soldier extends Entity {
         return {
             x: this.x,
             y: this.y,
+            id: this.id,
             team: this.team,
             status: this.status,
             health: this.health,

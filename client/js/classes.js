@@ -4,10 +4,11 @@
 
 class Circle extends PIXI.Sprite {
     // constructor draws circle
-    constructor(status, x = 0, y = 0) {
+    constructor(id, status, x = 0, y = 0) {
         super(app.loader.resources["circleBase"].texture);
         this.anchor.set(.5, .5); // position, scaling, rotating etc are now from center of sprite
         this.scale.set(0.1);
+        this.id = id;
         this.status = status;
         this.health = 2;
         this.team = "circles";
@@ -57,10 +58,11 @@ class Circle extends PIXI.Sprite {
 
 class Square extends PIXI.Sprite {
     // constructor draws square
-    constructor(status, x = 0, y = 0) {
+    constructor(id, status, x = 0, y = 0) {
         super(app.loader.resources["squareBase"].texture);
         this.anchor.set(.5, .5); // position, scaling, rotating etc are now from center of sprite
         this.scale.set(0.1);
+        this.id = id;
         this.status = status;
         this.health = 2;
         this.team = "squares";

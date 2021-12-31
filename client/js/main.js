@@ -8,9 +8,36 @@ ws.addEventListener('open', () => {
 });
 
 ws.addEventListener('message', (event) => {
-    const { type, data } = JSON.parse(event.data);
-    console.log(`Received message (type: ${type}):`, data);
-    //...
+    const message = JSON.parse(event.data);
+    console.log(`Received message (type: ${message.type}):`, message);
+
+    switch (message.type) {
+        case 'newTurn':
+            const { sound, currentTeam, updates } = message;
+
+            // play the action sound
+            const SOUNDS = { move: walkSound, moveGroup: groupwalkSound };
+            SOUNDS[sound].play();
+
+            // apply the entity updates
+            for (const update of updates) {
+                const { id } = update;
+                if (soldiers.has(id)) {
+                    let soldier = soldiers.get(id);
+                    const { x, y } = update;
+                    soldier.x = x;
+                    soldier.y = y;
+                } else {
+                    console.error(`Received update for unknown entity ID:`, id);
+                }
+            }
+
+            // set the current team
+            playerTeam = currentTeam;
+            newTurn();
+
+            break;
+    }
 });
 
 function sendMessage(message) {
@@ -87,16 +114,18 @@ const enemyTint = 0xBA404E;
 let stage;
 
 // item arrays
-let army = [];
-let circles = [];
-let squares = [];
+/** @type {Map<number, Circle|Square>} */
+let soldiers = new Map();
+/** @type {Bullet[]} */
 let bullets = [];
+/** @type {HealthKit[]} */
 let healthKits = [];
+/** @type {Wall[]} */
 let walls = [];
+/** @type {Trench[]} */
 let trenches = [];
 
 // game flow
-let coinFlip;
 let playerTeam;
 let selectedCharacter;
 
@@ -256,102 +285,58 @@ function gameLoop() {
         }
     }
 
-    if (circles.length > 0) {
-        for (let c of circles) {
-            // trench check
-            if (checkElevation(c) == true)
-            {
-                c.trench = true;
-            }
-            else
-            {
-                c.trench = false;
-            }
+    for (let soldier of soldiers.values()) {
+        // trench check
+        soldier.trench = checkElevation(soldier);
 
-            // bullet interactions
-            let squareBullets = bullets.filter(b => b.team == "squares");
-            for (let sqb of squareBullets) {
-                if (rectsIntersect(c, sqb) && c.trench == sqb.trench) {
-                    if (c.health == 3)
-                    {
-                        armorhitSound.play();
-                    }
-                    else
-                    {
-                        injuryhitSound.play();
-                    }
-                    c.damage();
-                    gameScene.removeChild(sqb);
-                    sqb.isActive = false;
+        // bullet interactions
+        for (let bullet of bullets) {
+            if (bullet.team !== soldier.team &&
+                soldier.trench === bullet.trench &&
+                rectsIntersect(soldier, bullet)
+            ) {
+                if (soldier.health === 3) {
+                    armorhitSound.play();
+                } else {
+                    injuryhitSound.play();
                 }
+                soldier.damage();
+                gameScene.removeChild(bullet);
+                bullet.isActive = false;
             }
+        }
 
-            // updating looks
-            c.drawState();
+        // updating looks
+        soldier.drawState();
 
-            // clearing up
-            if (c.health == 0) {
-                gameScene.removeChild(c);
-                c.alive = false;
-            }
+        // clearing up
+        if (soldier.health <= 0) {
+            gameScene.removeChild(soldier);
+            soldier.alive = false;
+            soldiers.delete(soldier.id);
         }
     }
 
-    if (squares.length > 0) {
-        for (let sq of squares) {
-            // trench check
-            if (checkElevation(sq) == true)
-            {
-                sq.trench = true;
-            }
-            else
-            {
-                sq.trench = false;
-            }
-
-            // bullet interactions
-            let circleBullets = bullets.filter(b => b.team == "circles");
-            for (let cb of circleBullets) {
-                if (rectsIntersect(sq, cb) && sq.trench == cb.trench) {
-                    if (sq.health == 3)
-                    {
-                        armorhitSound.play();
-                    }
-                    else
-                    {
-                        injuryhitSound.play();
-                    }
-                    sq.damage();
-                    gameScene.removeChild(cb);
-                    cb.isActive = false;
-                }
-            }
-
-            // updating looks
-            sq.drawState();
-
-            // clearing up
-            if (sq.health == 0) {
-                gameScene.removeChild(sq);
-                sq.alive = false;
-            }
-        }
-    }
-
-    // get rid of dead bullets, circles, health kits, and squares
+    // get rid of dead bullets and health kits
     bullets = bullets.filter(b => b.isActive);
     healthKits = healthKits.filter(hk => hk.isActive);
-    squares = squares.filter(sq => sq.alive);
-    circles = circles.filter(c => c.alive);
 
     // game ender
-    if (circles.length == 0)
-    {
-        endGame("SQUARES", squares);
+    let circlesAlive = 0;
+    let squaresAlive = 0;
+    for (const soldier of soldiers.values()) {
+        if (soldier.team === 'circles') {
+            circlesAlive++;
+        } else {
+            squaresAlive++;
+        }
     }
-    else if (squares.length == 0)
-    {
-        endGame("CIRCLES", circles);
+    if (circlesAlive === 0) {
+        // no more circles, so the squares win
+        endGame("SQUARES", soldiers);
+    } else if (squaresAlive === 0) {
+        // no more squares, so the circles win
+        endGame("CIRCLES", soldiers);
     }
 }
 
@@ -401,8 +386,17 @@ async function rollTitles(scene, text) {
     trenches = gameData.trenches.map(trench => new Trench(trench.x));
     walls = gameData.walls.map(wall => new Wall(wall.width, wall.height, wall.x, wall.y));
     healthKits = gameData.healthKits.map(healthKit => new HealthKit(healthKit.x, healthKit.y));
-    circles = gameData.circles.map(circle => new Circle(circle.status, circle.x, circle.y));
-    squares = gameData.squares.map(square => new Square(square.status, square.x, square.y));
+    soldiers = new Map(gameData.soldiers.map(sData => {
+        const { x, y, id, team, status } = sData;
+        let soldier;
+        if (team === "circles") {
+            soldier = new Circle(id, status, x, y);
+        } else {
+            soldier = new Square(id, status, x, y);
+        }
+        return [id, soldier];
+    }));
+    playerTeam = gameData.currentTeam;
     startGame();
 }
 
@@ -412,7 +406,6 @@ function startGame() {
     titleScene.visible = false;
     gameScene.visible = true;
     loadLevel();
-    coinFlip = getEvenOdd();
     newTurn();
 
     // start update loop
@@ -533,24 +526,14 @@ function loadLevel() {
         gameScene.addChild(k);
     }
 
-    for (let c of circles) {
-        gameScene.addChild(c);
-        c.interactive = true;
-        c.buttonMode = true;
-        c.on("pointerdown", characterPointerDown);
-        c.on("pointerover", characterPointerOver);
-        c.on("pointerout", characterPointerOut);
-        c.zIndex = 10;
-    }
-
-    for (let sq of squares) {
-        gameScene.addChild(sq);
-        sq.interactive = true;
-        sq.buttonMode = true;
-        sq.on("pointerdown", characterPointerDown);
-        sq.on("pointerover", characterPointerOver);
-        sq.on("pointerout", characterPointerOut);
-        sq.zIndex = 10;
+    for (let soldier of soldiers.values()) {
+        gameScene.addChild(soldier);
+        soldier.interactive = true;
+        soldier.buttonMode = true;
+        soldier.on("pointerdown", characterPointerDown);
+        soldier.on("pointerover", characterPointerOver);
+        soldier.on("pointerout", characterPointerOut);
+        soldier.zIndex = 10;
     }
 }
 
@@ -558,19 +541,13 @@ function loadLevel() {
 
 // #region new turn
 
-// everything to reset for each turn gets reset, then a team is randomly selected to play the next turn
+// everything to reset for each turn gets reset, then the (randomly selected) team is displayed
 function newTurn() {
     clearGameText();
-    coinFlip = getEvenOdd();
-    if (coinFlip == true) {
+    if (playerTeam === "circles") {
         gameCenterText = bigText(gameScene, "CIRCLES TURN");
-        playerTeam = "circles";
-        army = circles;
-    }
-    else {
+    } else {
         gameCenterText = bigText(gameScene, "SQUARES TURN");
-        playerTeam = "squares";
-        army = squares;
     }
 }
 
@@ -631,66 +608,6 @@ function deselect() {
 // #region actions
 
 // note: all actions cause the turn to end and the selected character to be deselected
-
-// moves only the selected character to a new given position
-function moveSelected(x, y) {
-    let w2 = selectedCharacter.width / 2;
-    let h2 = selectedCharacter.height / 2;
-    selectedCharacter.x = clamp(x, 0 + w2, sceneWidth - w2);
-    selectedCharacter.y = clamp(y, 0 + h2, sceneHeight - h2);
-    deselect();
-    newTurn();
-}
-
-// moves the selected character, which must be a general for this to work, and any other regular characters around it
-// also calls valid position checks and resolutions from utilities.js to make the other characters move like they're smart
-function moveGroupAroundCharacter(army, x, y) {
-    let generalX = selectedCharacter.x;
-    let generalY = selectedCharacter.y;
-    let offsetX = x - generalX;
-    let offsetY = y - generalY;
-    for (let a of army)
-    {
-        if (a.status != "general")
-        {
-            let distance = Math.sqrt(Math.pow((a.x - generalX), 2) + Math.pow((a.y - generalY), 2));
-            if (distance < 100)
-            {
-                let w2 = a.width / 2;
-                let h2 = a.height / 2;
-                let newX = a.x + offsetX;
-                let newY = a.y + offsetY;
-                a.x = clamp(newX, 0 + w2, sceneWidth - w2);
-                a.y = clamp(newY, 0 + h2, sceneHeight - h2);
-                for (let w of walls)
-                {
-                    if (rectsIntersect(a, w))
-                    {
-                        nudgeAway(a, w);
-                    }
-                }
-                let others = army.filter(soldier => soldier != a)
-                for (let o of others)
-                {
-                    if (o.containsPoint(a))
-                    {
-                        nudgeAway(o, a);
-                    }
-                }
-                a.x = clamp(a.x, 0 + w2, sceneWidth - w2);
-                a.y = clamp(a.y, 0 + h2, sceneHeight - h2);
-            }
-        }
-    }
-
-    // Finally moving the main character
-    let w2 = selectedCharacter.width / 2;
-    let h2 = selectedCharacter.height / 2;
-    selectedCharacter.x = clamp(x, 0 + w2, sceneWidth - w2);
-    selectedCharacter.y = clamp(y, 0 + h2, sceneHeight - h2);
-    deselect();
-    newTurn();
-}
 
 // creates a bullet heading in the direction of your mouse, with the reference point being the selected character
 function shoot() {
@@ -812,16 +729,13 @@ function moveCirclePointerDown() {
     }
 
     if (moving == true) {
-        if (selectedCharacter.status == "regular")
-        {
-            walkSound.play();
-            moveSelected(mousePosition.x, mousePosition.y);
-        }
-        else
-        {
-            groupwalkSound.play();
-            moveGroupAroundCharacter(army, mousePosition.x, mousePosition.y);
-        }
+        sendMessage({
+            type: "action:move",
+            soldierID: selectedCharacter.id,
+            x: mousePosition.x,
+            y: mousePosition.y,
+        });
+        deselect();
     }
 }
 

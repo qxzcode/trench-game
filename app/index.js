@@ -1,5 +1,6 @@
 import express from 'express';
 import expressWs from 'express-ws';
+
 import { Game } from './game.js';
 
 const app = express();
@@ -9,14 +10,16 @@ expressWs(app);
 app.use(express.static('client'));
 
 // Serve the websocket server on the /ws path
+const game = new Game();
+// @ts-ignore
 app.ws('/ws', (socket, request) => {
     console.log('socket connected');
-    socket.on('message', (msg) => {
+    socket.on('message', (/** @type {string} */ msg) => {
         const message = JSON.parse(msg);
         console.log('Message:', message);
         switch (message.type) {
             case 'start':
-                const game = new Game();
+                game.addPlayer(socket);
                 socket.send(JSON.stringify({
                     type: 'init',
                     data: game.toJSON(),

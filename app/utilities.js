@@ -97,7 +97,7 @@ export function getFiringAngle(soldierSprite, mousePosition) {
  * @param {Entity} object2
  */
 export function nudgeAway(object1, object2) {
-    while (object2.containsPoint(object1)) {
+    while (rectsIntersect(object1, object2)) {
         object1.x -= getRandom(-10, 10);
         object1.y -= getRandom(-10, 10);
     }
@@ -107,10 +107,15 @@ export function nudgeAway(object1, object2) {
  * The general intersection checker.
  * Returns true if the `object` overlaps with any object in the `array`.
  * @param {Entity} object
- * @param {Entity[]} array
+ * @param {Iterable<Entity>} array
  */
 export function intersectsAny(object, array) {
-    return array.some(item => rectsIntersect(object, item));
+    for (const entity of array) {
+        if (rectsIntersect(object, entity)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -130,12 +135,7 @@ export function isValidCharacterPosition(character, game) {
     }
 
     // check against other soldiers
-
-    if (game.circles && intersectsAny(character, game.circles)) {
-        return false;
-    }
-
-    if (game.squares && intersectsAny(character, game.squares)) {
+    if (game.soldiers && intersectsAny(character, game.soldiers.values())) {
         return false;
     }
 

@@ -20,7 +20,7 @@ export function makeTeam(game, team, generalsAmount, soldiersAmount, minX, maxX)
     {
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight);
-        let newGeneral = new Soldier(team, "general", x, y);
+        let newGeneral = new Soldier(game.newEntityID(), team, "general", x, y);
         let valid = isValidCharacterPosition(newGeneral, game);
         while (valid == false) {
             newGeneral.x = getRandom(minX, maxX);
@@ -39,7 +39,7 @@ export function makeTeam(game, team, generalsAmount, soldiersAmount, minX, maxX)
     {
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight);
-        let newSoldier = new Soldier(team, "regular", x, y);
+        let newSoldier = new Soldier(game.newEntityID(), team, "regular", x, y);
         let valid = isValidCharacterPosition(newSoldier, game);
         while (valid == false) {
             newSoldier.x = getRandom(minX, maxX);
