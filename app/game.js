@@ -20,11 +20,14 @@ export class Game {
 
         this.walls = makeWalls(this, 5, leftQuarterLine, rightQuarterLine);
 
-        this.healthKits = makeHealthKits(this, 10, 0, sceneWidth);
+        const healthKits = makeHealthKits(this, 10, 0, sceneWidth);
+        /** Map of health kits by their ID */
+        this.healthKits = new Map(healthKits.map(healthKit => [healthKit.id, healthKit]));
 
         const circles = makeTeam(this, 'circles', 2, 10, 0, leftQuarterLine);
         const squares = makeTeam(this, 'squares', 2, 10, rightQuarterLine, sceneWidth);
         const allSoldiers = [...circles, ...squares];
+        /** Map of soldiers by their ID */
         this.soldiers = new Map(allSoldiers.map(soldier => [soldier.id, soldier]));
 
         this.currentTeam = getRandomTeam();
@@ -60,10 +63,16 @@ export class Game {
         socket.on('message', (/** @type {string} */ msg) => {
             const message = JSON.parse(msg);
             switch (message.type) {
-                case 'action:move':
+                case 'action:move': {
                     const { soldierID, x, y } = message;
                     this.handleMoveAction(team, soldierID, x, y);
                     break;
+                }
+                case 'action:heal': {
+                    const { soldierID, healthKitID } = message;
+                    this.handleHealAction(team, soldierID, healthKitID);
+                    break;
+                }
             }
         });
     }
@@ -152,6 +161,55 @@ export class Game {
     }
 
     /**
+     * Handles an action:heal message.
+     */
+    handleHealAction(team, soldierID, healthKitID) {
+        // TODO: ensure that the action is valid for this player at this time
+
+        const selectedSoldier = this.soldiers.get(soldierID);
+        if (selectedSoldier === undefined) {
+            // TODO: reject this invalid soldier ID
+            console.error(`action:heal with invalid soldier ID ${soldierID}`);
+            return;
+        }
+        if (selectedSoldier.team !== team) {
+            // TODO: reject heal action for soldier not on own team
+            console.error(`action:heal for soldier not on own team`);
+        }
+
+        const healthKit = this.healthKits.get(healthKitID);
+        if (healthKit === undefined) {
+            // TODO: reject this invalid health kit ID
+            console.error(`action:heal with invalid health kit ID ${healthKitID}`);
+            return;
+        }
+
+        // heal the soldier
+        selectedSoldier.heal();
+
+        // remove the health kit
+        this.healthKits.delete(healthKitID);
+
+        // start a new turn and send the updated game state to all players
+        this.newTurn();
+        this.sendToAll({
+            type: 'newTurn',
+            sound: selectedSoldier.health === 3 ? 'healArmor' : 'heal',
+            currentTeam: this.currentTeam,
+            updates: [
+                {
+                    id: selectedSoldier.id,
+                    heal: true,
+                },
+                {
+                    id: healthKitID,
+                    remove: true,
+                },
+            ],
+        });
+    }
+
+    /**
      * Starts a new turn by randomizing the current team.
      */
     newTurn() {
@@ -217,7 +275,7 @@ export class Game {
         return {
             trenches: this.trenches.map(trench => trench.toJSON()),
             walls: this.walls.map(wall => wall.toJSON()),
-            healthKits: this.healthKits.map(healthKit => healthKit.toJSON()),
+            healthKits: Array.from(this.healthKits.values(), kit => kit.toJSON()),
             soldiers: Array.from(this.soldiers.values(), soldier => soldier.toJSON()),
             currentTeam: this.currentTeam,
         };

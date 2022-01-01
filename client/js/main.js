@@ -16,20 +16,17 @@ ws.addEventListener('message', (event) => {
             const { sound, currentTeam, updates } = message;
 
             // play the action sound
-            const SOUNDS = { move: walkSound, moveGroup: groupwalkSound };
+            const SOUNDS = {
+                move: walkSound,
+                moveGroup: groupwalkSound,
+                heal: healingSound,
+                healArmor: suitupSound,
+            };
             SOUNDS[sound].play();
 
             // apply the entity updates
             for (const update of updates) {
-                const { id } = update;
-                if (soldiers.has(id)) {
-                    let soldier = soldiers.get(id);
-                    const { x, y } = update;
-                    soldier.x = x;
-                    soldier.y = y;
-                } else {
-                    console.error(`Received update for unknown entity ID:`, id);
-                }
+                applyEntityUpdate(update);
             }
 
             // set the current team
@@ -39,6 +36,30 @@ ws.addEventListener('message', (event) => {
             break;
     }
 });
+
+/** Applies an entity update sent from the server. */
+function applyEntityUpdate(updateInfo) {
+    const { id } = updateInfo;
+    if (soldiers.has(id)) {
+        let soldier = soldiers.get(id);
+        const { x, y, heal } = updateInfo;
+        if (heal) {
+            soldier.heal();
+        } else {
+            soldier.x = x;
+            soldier.y = y;
+        }
+    } else if (healthKits.has(id)) {
+        let healthKit = healthKits.get(id);
+        const { remove } = updateInfo;
+        if (remove) {
+            gameScene.removeChild(healthKit);
+            healthKits.delete(id);
+        }
+    } else {
+        console.error(`Received update for unknown entity ID:`, id);
+    }
+}
 
 function sendMessage(message) {
     ws.send(JSON.stringify(message));
@@ -118,15 +139,17 @@ let stage;
 let soldiers = new Map();
 /** @type {Bullet[]} */
 let bullets = [];
-/** @type {HealthKit[]} */
-let healthKits = [];
+/** @type {Map<number, HealthKit>} */
+let healthKits = new Map();
 /** @type {Wall[]} */
 let walls = [];
 /** @type {Trench[]} */
 let trenches = [];
 
 // game flow
+/** @type {'circles'|'squares'} */
 let playerTeam;
+/** @type {Circle|Square} */
 let selectedCharacter;
 
 // tooltips/text
@@ -317,9 +340,8 @@ function gameLoop() {
         }
     }
 
-    // get rid of dead bullets and health kits
+    // get rid of dead bullets
     bullets = bullets.filter(b => b.isActive);
-    healthKits = healthKits.filter(hk => hk.isActive);
 
     // game ender
     let circlesAlive = 0;
@@ -385,7 +407,7 @@ async function rollTitles(scene, text) {
     const gameData = await gameDataPromise;
     trenches = gameData.trenches.map(trench => new Trench(trench.x));
     walls = gameData.walls.map(wall => new Wall(wall.width, wall.height, wall.x, wall.y));
-    healthKits = gameData.healthKits.map(healthKit => new HealthKit(healthKit.x, healthKit.y));
+    healthKits = new Map(gameData.healthKits.map(({x, y, id}) => [id, new HealthKit(id, x, y)]));
     soldiers = new Map(gameData.soldiers.map(sData => {
         const { x, y, id, team, status } = sData;
         let soldier;
@@ -522,7 +544,7 @@ function loadLevel() {
         gameScene.addChild(w);
     }
 
-    for (let k of healthKits) {
+    for (let k of healthKits.values()) {
         gameScene.addChild(k);
     }
 
@@ -620,14 +642,18 @@ function shoot() {
     newTurn();
 }
 
-// calls the selected character's in-class heal function and uses up the given health kit
-function heal(healthKit)
-{
-    selectedCharacter.heal();
-    healthKit.isActive = false;
-    gameScene.removeChild(healthKit);
+/**
+ * Sends a heal action to the server, which will call the selected character's
+ * in-class heal function and use up the given health kit.
+ * @param {HealthKit} healthKit
+ */
+function heal(healthKit) {
+    sendMessage({
+        type: "action:heal",
+        soldierID: selectedCharacter.id,
+        healthKitID: healthKit.id,
+    });
     deselect();
-    newTurn();
 }
 
 // #endregion
@@ -704,23 +730,12 @@ function moveCirclePointerDown() {
     }
 
     // check against all health kits to see if this is a health kit action
-    for (let health of healthKits) {
+    for (let health of healthKits.values()) {
         if (mouseInBounds(mousePosition, health)) {
-            if (selectedCharacter.health > 2)
-            {
+            if (selectedCharacter.health > 2) {
                 scratchSound1.play();
                 this.tint = enemyTint;
-            }
-            else
-            {
-                if (selectedCharacter.health == 2)
-                    {
-                        suitupSound.play();
-                    }
-                    else
-                    {
-                        healingSound.play();
-                    }
+            } else {
                 heal(health);
                 moving = false;
             }

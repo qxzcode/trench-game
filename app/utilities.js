@@ -130,7 +130,7 @@ export function isValidCharacterPosition(character, game) {
     }
 
     // check against health kits
-    if (intersectsAny(character, game.healthKits)) {
+    if (intersectsAny(character, game.healthKits.values())) {
         return false;
     }
 

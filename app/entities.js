@@ -71,19 +71,21 @@ export class Soldier extends Entity {
 
 export class HealthKit extends Entity {
     /**
+     * @param {number} id
      * @param {number} x
      * @param {number} y
      */
-    constructor(x, y) {
+    constructor(id, x, y) {
         const size = 192 * 0.1;
         super(x, y, size, size);
-        this.isActive = true;
+        this.id = id;
     }
 
     toJSON() {
         return {
             x: this.x,
             y: this.y,
+            id: this.id,
         };
     }
 }

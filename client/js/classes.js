@@ -49,7 +49,7 @@ class Circle extends PIXI.Sprite {
         this.health++;
         this.drawState();
     }
-    
+
     damage() {
         this.health--;
         this.drawState();
@@ -115,10 +115,11 @@ class Square extends PIXI.Sprite {
 // #region interactables
 
 class HealthKit extends PIXI.Sprite {
-    constructor(x, y) {
+    constructor(id, x, y) {
         super(app.loader.resources["healthKit"].texture);
         this.anchor.set(.5, .5); // position, scaling, rotating etc are now from center of sprite
         this.scale.set(0.1);
+        this.id = id;
         this.x = x;
         this.y = y;
         //this.beginFill(0xFFFFFF);
@@ -171,7 +172,7 @@ class Trench extends PIXI.Sprite {
     }
 }
 
-class Wall extends PIXI.Sprite {    
+class Wall extends PIXI.Sprite {
     constructor(width, height, x, y) {
         super(app.loader.resources["wall"].texture);
         this.anchor.set(.5, .5); // position, scaling, rotating etc are now from center of sprite

@@ -121,7 +121,7 @@ export function makeHealthKits(game, amount, minX, maxX)
         let y = getRandom(0, sceneHeight / 2);
 
         // object creation
-        let newKit = new HealthKit(x, y);
+        let newKit = new HealthKit(game.newEntityID(), x, y);
 
         // check for acceptable position
         let valid = isValidHealthKitPosition(newKit, game);
