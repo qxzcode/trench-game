@@ -279,28 +279,22 @@ function gameLoop() {
             b.isActive = false; // Cleans up bullets outside the world
         }
 
-        for (let w of walls)
-        {
-            if (rectsIntersect(b, w))
-            {
+        for (let w of walls) {
+            if (rectsIntersect(b, w)) {
                 bumpSound.play();
                 b.isActive = false;
             }
         }
 
-        if (b.trench == true)
-        {
+        if (b.trench == true) {
             let inTrench = false;
-            for (let t of trenches)
-            {
-                if (rectsIntersect(b, t))
-                {
+            for (let t of trenches) {
+                if (rectsIntersect(b, t)) {
                     inTrench = true;
                     break;
                 }
             }
-            if (inTrench == false)
-            {
+            if (inTrench == false) {
                 bumpSound.play();
                 b.isActive = false;
                 gameScene.removeChild(b);
@@ -368,8 +362,7 @@ function gameLoop() {
 
 // creates a random helpful tip - generally in the tip scene, but it can go anywhere
 // this is the first thing the audience
-function createTip(scene, tips)
-{
+function createTip(scene, tips) {
     let randomIndex = getRandom(0, tips.length - 1).toFixed(0);
     let tip = tips[randomIndex];
     console.log(randomIndex);
@@ -382,7 +375,7 @@ function createTip(scene, tips)
     tipStart.interactive = true;
     tipStart.buttonMode = true;
     // this start button thing is taken from Circle Blast. all credit to the 235 professors!
-    tipStart.on("pointerup", function(){
+    tipStart.on("pointerup", function() {
         rollTitles(titleScene, "TRENCH GAME");
     }); // startGame is a function reference
     tipStart.on("pointerover", e => e.target.alpha = 0.7); // concise arrow function with no brackets
@@ -407,7 +400,7 @@ async function rollTitles(scene, text) {
     const gameData = await gameDataPromise;
     trenches = gameData.trenches.map(trench => new Trench(trench.x));
     walls = gameData.walls.map(wall => new Wall(wall.width, wall.height, wall.x, wall.y));
-    healthKits = new Map(gameData.healthKits.map(({x, y, id}) => [id, new HealthKit(id, x, y)]));
+    healthKits = new Map(gameData.healthKits.map(({ x, y, id }) => [id, new HealthKit(id, x, y)]));
     soldiers = new Map(gameData.soldiers.map(sData => {
         const { x, y, id, team, status } = sData;
         let soldier;
@@ -439,12 +432,10 @@ function endGame(winnerName, winnerList) {
     healingSound.play();
     gameScene.visible = false;
     endScene.visible = true;
-    for (let winner of winnerList)
-    {
+    for (let winner of winnerList) {
         endScene.addChild(winner);
     }
-    for (let trench of trenches)
-    {
+    for (let trench of trenches) {
         endScene.addChild(trench);
     }
     bigText(endScene, `${winnerName} WIN`);
@@ -456,8 +447,7 @@ function endGame(winnerName, winnerList) {
 // #region titles and text
 
 // fills out the tip array with helpful tips
-function fillTipArray(tipArray)
-{
+function fillTipArray(tipArray) {
     tipArray.push("Turns are decided at random! You'll see whose move it is at the beginning of each turn. Click a shape to select them.");
     tipArray.push("Generals (the shapes with smaller shapes inside them) tell the shapes around them where to go.");
     tipArray.push("If a health kit is within a shape's move circle, you can click it to heal that shape!");
@@ -483,7 +473,7 @@ function bigText(scene, text, x = verticalMidline, y = horizontalMidline - 50) {
         fontWeight: "bolder",
         align: "center"
     });
-    textObject.anchor.set(0.5, 0,5);
+    textObject.anchor.set(0.5, 0, 5);
     scene.addChild(textObject);
     textObject.y = y;
     textObject.x = x;
@@ -491,8 +481,7 @@ function bigText(scene, text, x = verticalMidline, y = horizontalMidline - 50) {
 }
 
 // creates small text anywhere in the given scene
-function toolTipText(scene, text, x, y, fontSize = 14)
-{
+function toolTipText(scene, text, x, y, fontSize = 14) {
     let textObject = new PIXI.Text(text);
     textObject.style = new PIXI.TextStyle({
         fill: 0x000000,
@@ -501,7 +490,7 @@ function toolTipText(scene, text, x, y, fontSize = 14)
         fontWeight: "bolder",
         align: "center"
     });
-    textObject.anchor.set(0.5, 0,5);
+    textObject.anchor.set(0.5, 0, 5);
     scene.addChild(textObject);
     textObject.y = y;
     textObject.x = x;
@@ -520,8 +509,7 @@ function clearGameText() {
 }
 
 // clears the two toolTipText objects from the game scene
-function clearToolTips()
-{
+function clearToolTips() {
     gameScene.removeChild(moveToolTip);
     gameScene.removeChild(shootToolTip);
 }
@@ -583,15 +571,12 @@ function select(character) {
     // make sure you can only select circles and squares, the only objects with a team variable
     if (character.team != undefined) {
         selectedCharacter = character;
-        if (character.status == "general")
-        {
+        if (character.status == "general") {
             moveCircle = new MoveCircle(selectedCharacter.x, selectedCharacter.y, 90);
             shootCircle = new ShootCircle(selectedCharacter.x, selectedCharacter.y, 140)
             moveToolTip = new toolTipText(gameScene, "MOVE SQUAD", selectedCharacter.x, selectedCharacter.y - 75);
             shootToolTip = new toolTipText(gameScene, "SHOOT", selectedCharacter.x, selectedCharacter.y - 125);
-        }
-        else
-        {
+        } else {
             moveCircle = new MoveCircle(selectedCharacter.x, selectedCharacter.y, 72);
             shootCircle = new ShootCircle(selectedCharacter.x, selectedCharacter.y, 112)
             moveToolTip = new toolTipText(gameScene, "MOVE", selectedCharacter.x, selectedCharacter.y - 55);
@@ -667,8 +652,7 @@ function heal(healthKit) {
 
 // deselects selected characters and selects unselected characters, as long as they're on your team
 function characterPointerDown() {
-    if (selectedCharacter != null)
-    {
+    if (selectedCharacter != null) {
         deselect();
     }
     if (this.team == playerTeam) {
@@ -676,12 +660,10 @@ function characterPointerDown() {
         if (this != selectedCharacter) {
             clickSound1.play();
             select(this);
-        }
-        else {
+        } else {
             deselect();
         }
-    }
-    else {
+    } else {
         this.tint = enemyTint;
     }
 }
@@ -690,8 +672,7 @@ function characterPointerDown() {
 function characterPointerOver() {
     if (this.team == playerTeam) {
         this.tint = teamTint;
-    }
-    else {
+    } else {
         this.tint = enemyTint;
     }
 }
@@ -700,8 +681,7 @@ function characterPointerOver() {
 function characterPointerOut() {
     if (this == selectedCharacter) {
         this.tint = teamSelectedTint;
-    }
-    else {
+    } else {
         this.tint = 0xFFFFFF;
     }
 }

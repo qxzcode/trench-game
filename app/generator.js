@@ -11,13 +11,11 @@ import { Game } from './game.js';
  * @param {number} minX
  * @param {number} maxX
  */
-export function makeTeam(game, team, generalsAmount, soldiersAmount, minX, maxX)
-{
+export function makeTeam(game, team, generalsAmount, soldiersAmount, minX, maxX) {
     let army = [];
 
     // generals
-    for (let i = 0; i < generalsAmount; i++)
-    {
+    for (let i = 0; i < generalsAmount; i++) {
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight);
         let newGeneral = new Soldier(game.newEntityID(), team, "general", x, y);
@@ -35,8 +33,7 @@ export function makeTeam(game, team, generalsAmount, soldiersAmount, minX, maxX)
     }
 
     // soldiers
-    for (let i = 0; i < soldiersAmount; i++)
-    {
+    for (let i = 0; i < soldiersAmount; i++) {
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight);
         let newSoldier = new Soldier(game.newEntityID(), team, "regular", x, y);
@@ -62,12 +59,10 @@ export function makeTeam(game, team, generalsAmount, soldiersAmount, minX, maxX)
  * @param {number} minX
  * @param {number} maxX
  */
-export function makeWalls(game, amount, minX, maxX)
-{
+export function makeWalls(game, amount, minX, maxX) {
     let wallArray = [];
 
-    for (let i = 0; i < amount; i++)
-    {
+    for (let i = 0; i < amount; i++) {
         // random position
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight);
@@ -110,12 +105,10 @@ export function makeWalls(game, amount, minX, maxX)
  * @param {number} minX
  * @param {number} maxX
  */
-export function makeHealthKits(game, amount, minX, maxX)
-{
+export function makeHealthKits(game, amount, minX, maxX) {
     let kitArray = [];
 
-    for (let i = 0; i < amount; i++)
-    {
+    for (let i = 0; i < amount; i++) {
         // random position
         let x = getRandom(minX, maxX);
         let y = getRandom(0, sceneHeight / 2);
@@ -144,8 +137,7 @@ export function makeHealthKits(game, amount, minX, maxX)
     return kitArray;
 }
 
-export function makeTrenches()
-{
+export function makeTrenches() {
     let trenchArray = [];
 
     let minX = leftQuarterLine;
