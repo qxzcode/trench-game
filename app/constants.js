@@ -1,5 +1,5 @@
-const windowWidth = 1852; // window.innerWidth
-const windowHeight = 634; // window.innerHeight
+const windowWidth = 800;
+const windowHeight = 600;
 
 export const sceneWidth = Math.round(windowWidth * 0.95);
 export const sceneHeight = Math.round(windowHeight * 0.95);

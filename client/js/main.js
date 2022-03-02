@@ -135,15 +135,12 @@ function sendAndGetReply(message, replyType) {
 }
 
 
-const windowWidth = window.innerWidth;
-const windowHeight = window.innerHeight;
-
 // #region pixi establishment
 
 // starting by creating the pixi application
 const app = new PIXI.Application({
-    width: (windowWidth * 0.95).toFixed(0),
-    height: (windowHeight * 0.95).toFixed(0),
+    width: 800,
+    height: 600,
     backgroundColor: 0xD3DACE //0xBACDB0
 });
 document.body.appendChild(app.view);
@@ -176,8 +173,8 @@ app.loader.load();
 // #region fields
 
 // constants
-const sceneWidth = Math.round(windowWidth * 0.95);
-const sceneHeight = Math.round(windowHeight * 0.95);
+const sceneWidth = 800;
+const sceneHeight = 600;
 const verticalMidline = sceneWidth / 2;
 const horizontalMidline = sceneHeight / 2;
 const leftQuarterLine = sceneWidth / 4;
