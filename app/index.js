@@ -23,6 +23,7 @@ app.ws('/ws', (socket, request) => {
                 socket.send(JSON.stringify({
                     type: 'init',
                     data: game.toJSON(),
+                    gameTime: game.getCurrentTime(),
                 }));
                 break;
         }

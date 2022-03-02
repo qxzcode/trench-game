@@ -13,7 +13,12 @@ import { Game } from "./game.js";
 export function rectsIntersect(a, b) {
     var ab = a.getBounds();
     var bb = b.getBounds();
-    return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
+    return (
+        ab.x + ab.width > bb.x &&
+        ab.x < bb.x + bb.width &&
+        ab.y + ab.height > bb.y &&
+        ab.y < bb.y + bb.height
+    );
 }
 
 /**
@@ -46,21 +51,6 @@ export function getEvenOdd() {
 }
 
 // #region specific position/intersection checks
-
-/**
- * Checks if the mouse position is within the bounds of an object.
- * @param {{ x: number; y: number; }} mousePosition
- * @param {Entity} object
- */
-export function mouseInBounds(mousePosition, object) {
-    let bounds = object.getBounds();
-    return (
-        mousePosition.x < bounds.right &&
-        mousePosition.x > bounds.left &&
-        mousePosition.y < bounds.bottom &&
-        mousePosition.y > bounds.top
-    );
-}
 
 /**
  * Returns true if `character` is in a trench.

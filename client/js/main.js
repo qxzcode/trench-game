@@ -11,8 +11,20 @@ ws.addEventListener('message', (event) => {
     const message = JSON.parse(event.data);
     console.log(`Received message (type: ${message.type}):`, message);
 
+    // update gameTimeOrigin based on the server's time
+    if (message.gameTime != null) {
+        const now = performance.now() / 1000;
+        const messageTimeOrigin = now - message.gameTime;
+        if (messageTimeOrigin < gameTimeOrigin) {
+            // the server's time is ahead of ours, so adjust our time origin to catch up
+            gameTimeOrigin = messageTimeOrigin;
+        }
+    }
+
     switch (message.type) {
         case 'newTurn':
+        case 'bulletHit':
+        case 'updateBullets':
             const { sound, currentTeam, updates } = message;
 
             // play the action sound
@@ -21,17 +33,23 @@ ws.addEventListener('message', (event) => {
                 moveGroup: groupwalkSound,
                 heal: healingSound,
                 healArmor: suitupSound,
+                shoot: shootSound,
+                bump: bumpSound,
             };
-            SOUNDS[sound].play();
+            if (sound !== null) {
+                SOUNDS[sound].play();
+            }
 
             // apply the entity updates
             for (const update of updates) {
                 applyEntityUpdate(update);
             }
 
-            // set the current team
-            playerTeam = currentTeam;
-            newTurn();
+            if (message.type === 'newTurn') {
+                // set the current team
+                playerTeam = currentTeam;
+                newTurn();
+            }
 
             break;
     }
@@ -56,6 +74,42 @@ function applyEntityUpdate(updateInfo) {
             gameScene.removeChild(healthKit);
             healthKits.delete(id);
         }
+    } else if (bullets.has(id)) {
+        let bullet = bullets.get(id);
+        const { remove } = updateInfo;
+        if (remove) {
+            if (bullet.impactDisappear) {
+                gameScene.removeChild(bullet);
+            } else {
+                // move the bullet to its impact location
+                bullet.move(bullet.impactTime);
+            }
+            if (bullet.impactSoldierID !== null) {
+                let soldier = soldiers.get(bullet.impactSoldierID);
+                if (soldier.health === 3) {
+                    armorhitSound.play();
+                } else {
+                    injuryhitSound.play();
+                }
+                soldier.damage();
+            }
+            bullets.delete(id);
+        } else {
+            bullet.startX = updateInfo.startX;
+            bullet.startY = updateInfo.startY;
+            bullet.forward = updateInfo.direction;
+            bullet.team = updateInfo.team;
+            bullet.trench = updateInfo.inTrench;
+            bullet.speed = updateInfo.speed;
+            bullet.startTime = updateInfo.startTime;
+            bullet.impactTime = updateInfo.impactTime;
+            bullet.impactDisappear = updateInfo.impactDisappear;
+            bullet.impactSoldierID = updateInfo.impactSoldierID;
+        }
+    } else if (updateInfo.type === 'bullet') {
+        const bullet = new Bullet(updateInfo);
+        bullets.set(id, bullet);
+        gameScene.addChild(bullet);
     } else {
         console.error(`Received update for unknown entity ID:`, id);
     }
@@ -133,12 +187,13 @@ const enemyTint = 0xBA404E;
 
 // game variables
 let stage;
+let gameTimeOrigin = Infinity;
 
 // item arrays
 /** @type {Map<number, Circle|Square>} */
 let soldiers = new Map();
-/** @type {Bullet[]} */
-let bullets = [];
+/** @type {Map<number, Bullet>} */
+let bullets = new Map();
 /** @type {Map<number, HealthKit>} */
 let healthKits = new Map();
 /** @type {Wall[]} */
@@ -268,12 +323,11 @@ function setup() {
 
 // calculates damage to characters and bullets, cleans up dead objects, and checks for a win state
 function gameLoop() {
-    // calculating "delta time" - from the circle blast homework!
-    let dt = 1 / app.ticker.FPS;
-    if (dt > 1 / 12) dt = 1 / 12;
+    const gameTime = (performance.now() / 1000) - gameTimeOrigin;
 
-    for (let b of bullets) {
-        b.move(dt);
+    for (let b of bullets.values()) {
+        b.move(gameTime);
+        continue;
 
         if (b.y < -10 || b.y > sceneHeight + 10 || b.x < -10 || b.x > sceneWidth + 10) {
             b.isActive = false; // Cleans up bullets outside the world
@@ -307,7 +361,8 @@ function gameLoop() {
         soldier.trench = checkElevation(soldier);
 
         // bullet interactions
-        for (let bullet of bullets) {
+        for (let bullet of bullets.values()) {
+            continue;
             if (bullet.team !== soldier.team &&
                 soldier.trench === bullet.trench &&
                 rectsIntersect(soldier, bullet)
@@ -333,9 +388,6 @@ function gameLoop() {
             soldiers.delete(soldier.id);
         }
     }
-
-    // get rid of dead bullets
-    bullets = bullets.filter(b => b.isActive);
 
     // game ender
     let circlesAlive = 0;
@@ -411,6 +463,7 @@ async function rollTitles(scene, text) {
         }
         return [id, soldier];
     }));
+    // bullets = // TODO: factor out common bullet deserialization code
     playerTeam = gameData.currentTeam;
     startGame();
 }
@@ -619,10 +672,14 @@ function deselect() {
 // creates a bullet heading in the direction of your mouse, with the reference point being the selected character
 function shoot() {
     let mousePosition = app.renderer.plugins.interaction.mouse.global;
-    let forward = getFiringAngle(selectedCharacter, mousePosition);
-    let newBullet = new Bullet(selectedCharacter.x, selectedCharacter.y, forward, playerTeam, selectedCharacter.trench);
-    gameScene.addChild(newBullet);
-    bullets.push(newBullet);
+    let direction = getFiringAngle(selectedCharacter, mousePosition);
+
+    sendMessage({
+        type: "action:shoot",
+        soldierID: selectedCharacter.id,
+        direction: direction,
+    });
+
     deselect();
     newTurn();
 }
@@ -736,7 +793,6 @@ function moveCirclePointerDown() {
 
 // calls the shoot function, which handles all shooting related work
 function shootCirclePointerDown() {
-    shootSound.play();
     shoot();
 }
 

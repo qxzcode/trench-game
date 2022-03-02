@@ -136,25 +136,45 @@ class HealthKit extends PIXI.Sprite {
 }
 
 class Bullet extends PIXI.Graphics {
-    constructor(x, y, forward, team, trench) {
+    constructor(bulletInfo) {
         super();
         this.beginFill(0x333333);
-        this.drawRect(-2, -3, 6, 6);
+        this.drawRect(-3, -3, 6, 6);
         this.endFill();
-        this.x = x;
-        this.y = y;
+
+        const {
+            id,
+            startX,
+            startY,
+            direction,
+            team,
+            inTrench,
+            speed,
+            startTime,
+            impactTime,
+            impactDisappear,
+            impactSoldierID,
+        } = bulletInfo;
+        this.id = id;
+        this.startX = this.x = startX;
+        this.startY = this.y = startY;
         // variables
-        this.forward = forward;
-        this.speed = 300;
-        this.isActive = true;
+        this.forward = direction;
         this.team = team;
-        this.trench = trench;
-        Object.seal(this);
+        this.trench = inTrench;
+        this.speed = speed;
+        this.startTime = startTime;
+        this.impactTime = impactTime;
+        this.impactDisappear = impactDisappear;
+        this.impactSoldierID = impactSoldierID;
     }
 
-    move(dt = 1 / 60) {
-        this.x += this.forward.x * this.speed * dt;
-        this.y += this.forward.y * this.speed * dt;
+    /**
+     * @param {number} time
+     */
+    move(time) {
+        this.x = this.startX + this.forward.x * this.speed * (time - this.startTime);
+        this.y = this.startY + this.forward.y * this.speed * (time - this.startTime);
     }
 }
 

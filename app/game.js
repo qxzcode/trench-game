@@ -1,5 +1,6 @@
 import { sceneWidth, sceneHeight, leftQuarterLine, verticalMidline, rightQuarterLine } from './constants.js';
 import { makeTeam, makeWalls, makeHealthKits, makeTrenches } from './generator.js';
+import { Bullet } from './entities.js';
 import { getEvenOdd, nudgeAway, clamp } from './utilities.js';
 
 function getRandomTeam() {
@@ -29,6 +30,11 @@ export class Game {
         const allSoldiers = [...circles, ...squares];
         /** Map of soldiers by their ID */
         this.soldiers = new Map(allSoldiers.map(soldier => [soldier.id, soldier]));
+
+        /** @type {Map<number, Bullet>} Map of bullets by their ID */
+        this.bullets = new Map();
+
+        this.nextImpactTimer = null;
 
         this.currentTeam = getRandomTeam();
 
@@ -71,6 +77,11 @@ export class Game {
                 case 'action:heal': {
                     const { soldierID, healthKitID } = message;
                     this.handleHealAction(team, soldierID, healthKitID);
+                    break;
+                }
+                case 'action:shoot': {
+                    const { soldierID, direction } = message;
+                    this.handleShootAction(team, soldierID, direction);
                     break;
                 }
             }
@@ -133,6 +144,7 @@ export class Game {
                             id: soldier.id,
                             x: soldier.x,
                             y: soldier.y,
+                            // TODO: update & send inTrench
                         });
                     }
                 }
@@ -148,6 +160,7 @@ export class Game {
             id: selectedSoldier.id,
             x: selectedSoldier.x,
             y: selectedSoldier.y,
+            // TODO: update & send inTrench
         });
 
         // start a new turn and send the updated game state to all players
@@ -158,6 +171,9 @@ export class Game {
             currentTeam: this.currentTeam,
             updates,
         });
+
+        // recompute bullet impact times
+        this._recomputeBulletImpacts();
     }
 
     /**
@@ -210,6 +226,47 @@ export class Game {
     }
 
     /**
+     * Handles an action:shoot message.
+     */
+    handleShootAction(team, soldierID, direction) {
+        // TODO: ensure that the action is valid for this player at this time
+
+        const selectedSoldier = this.soldiers.get(soldierID);
+        if (selectedSoldier === undefined) {
+            // TODO: reject this invalid soldier ID
+            console.error(`action:shoot with invalid soldier ID ${soldierID}`);
+            return;
+        }
+        if (selectedSoldier.team !== team) {
+            // TODO: reject shoot action for soldier not on own team
+            console.error(`action:shoot for soldier not on own team`);
+        }
+
+        // create a new bullet
+        const bullet = new Bullet(
+            this.newEntityID(),
+            selectedSoldier.x, selectedSoldier.y,
+            direction,
+            selectedSoldier.team,
+            selectedSoldier.inTrench,
+            this,
+        );
+        this.bullets.set(bullet.id, bullet);
+
+        // start a new turn and send the updated game state to all players
+        this.newTurn();
+        this.sendToAll({
+            type: 'newTurn',
+            sound: 'shoot',
+            currentTeam: this.currentTeam,
+            updates: [{ ...bullet.toJSON(), type: 'bullet' }],
+        });
+
+        // reschedule the next update, as the new bullet may have the soonest impact time
+        this.rescheduleUpdate();
+    }
+
+    /**
      * Starts a new turn by randomizing the current team.
      */
     newTurn() {
@@ -221,13 +278,114 @@ export class Game {
      */
     update() {
         const currentTime = this.getCurrentTime();
-        //...
+        console.log(`Game.update(): ${currentTime}`);
+
+        // handle bullet impacts
+        while (true) {
+            const [nextImpactTime, nextImpactBullet] = this._getNextImpact();
+            if (nextImpactTime <= currentTime) {
+                // handle the impact
+                console.log(`${currentTime} > Bullet ${nextImpactBullet.id} hit something ` +
+                            `at ${nextImpactBullet.impactTime}`);
+                const hitSoldierID = nextImpactBullet.impactSoldierID;
+                let soldierKilled = false;
+                if (hitSoldierID !== null) {
+                    const soldier = this.soldiers.get(hitSoldierID);
+                    soldier.damage();
+                    if (soldier.health <= 0) {
+                        // the soldier was killed
+                        soldierKilled = true;
+                        console.log(`Soldier ${hitSoldierID} died`);
+                        this.soldiers.delete(hitSoldierID);
+                    }
+                }
+                this.sendToAll({
+                    type: 'bulletHit',
+                    sound: nextImpactBullet.impactSound,
+                    updates: [{
+                        id: nextImpactBullet.id,
+                        remove: true,
+                    }],
+                });
+
+                // remove the bullet
+                this.bullets.delete(nextImpactBullet.id);
+
+                // if a soldier was killed, re-compute all bullet impacts
+                if (soldierKilled) {
+                    this._recomputeBulletImpacts();
+                }
+            } else {
+                // no more impacts at this time
+                break;
+            }
+        }
+
+        // schedule the next update
+        this.rescheduleUpdate();
+    }
+
+    /**
+     * Schedules an update for the soonest bullet impact.
+     */
+    rescheduleUpdate() {
+        clearTimeout(this.nextImpactTimer);
+        const [nextImpactTime, nextImpactBullet] = this._getNextImpact();
+        if (nextImpactTime !== Infinity) {
+            const delayMs = (nextImpactTime - this.getCurrentTime()) * 1000;
+            this.nextImpactTimer = setTimeout(() => this.update(), delayMs);
+        } else {
+            this.nextImpactTimer = null;
+        }
+    }
+
+    /**
+     * Returns the game time of the next bullet impact along with the impacting
+     * bullet, or [Infinity, null] if there are no impending bullet impacts.
+     * Assumes that all bullets have up-to-date impact times computed.
+     * @returns {[number, Bullet?]}
+     */
+    _getNextImpact() {
+        let nextImpactTime = Infinity;
+        let nextImpactBullet = null;
+        for (const bullet of this.bullets.values()) {
+            if (bullet.impactTime < nextImpactTime) {
+                nextImpactTime = bullet.impactTime;
+                nextImpactBullet = bullet;
+            }
+        }
+        return [nextImpactTime, nextImpactBullet];
+    }
+
+    /**
+     * Recomputes the impact time of all bullets, then reschedules the next update.
+     */
+    _recomputeBulletImpacts() {
+        let updates = [];
+        for (const bullet of this.bullets.values()) {
+            bullet.computeImpact(this);
+            updates.push({ ...bullet.toJSON(), type: 'bullet' });
+        }
+
+        // send changed impact times to all players
+        // (send each bullet's full information, so that the client can re-add it if it
+        //  was already removed client-side due to lag)
+        this.sendToAll({
+            type: 'updateBullets',
+            sound: null,
+            currentTeam: this.currentTeam,
+            updates,
+        });
+
+        // reschedule the next update
+        this.rescheduleUpdate();
     }
 
     /**
      * Returns the current game time in seconds.
      */
     getCurrentTime() {
+        // TODO: freeze this until updated?
         const nowNanos = process.hrtime.bigint();
         return Number(nowNanos - this.timeOriginNanos) / 1e9;
     }
@@ -256,9 +414,11 @@ export class Game {
 
     /**
      * Sends a message to all connected player sockets.
+     * Adds a `gameTime` property to the message with the current game time.
      * @param {any} message
      */
     sendToAll(message) {
+        message.gameTime = this.getCurrentTime();
         const json = JSON.stringify(message);
         if (this.circlesSocket !== null) {
             this.circlesSocket.send(json);
@@ -277,6 +437,7 @@ export class Game {
             walls: this.walls.map(wall => wall.toJSON()),
             healthKits: Array.from(this.healthKits.values(), kit => kit.toJSON()),
             soldiers: Array.from(this.soldiers.values(), soldier => soldier.toJSON()),
+            bullets: Array.from(this.bullets.values(), bullet => bullet.toJSON()),
             currentTeam: this.currentTeam,
         };
     }
