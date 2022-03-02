@@ -18,6 +18,19 @@ export class Bounds {
         /** The height of the bounding box. */
         this.height = height;
     }
+
+    /**
+     * @param {number} x
+     * @param {number} y
+     */
+    containsPoint(x, y) {
+        return (
+            x >= this.x - this.width / 2 &&
+            x <= this.x + this.width / 2 &&
+            y >= this.y - this.height / 2 &&
+            y <= this.y + this.height / 2
+        );
+    }
 }
 
 export class Entity {
@@ -66,6 +79,16 @@ export class Soldier extends Entity {
 
     damage() {
         this.health--;
+    }
+
+    /**
+     * Updates this Soldier's inTrench status based on its position.
+     * @param {Game} game
+     */
+    updateTrenchStatus(game) {
+        this.inTrench = game.trenches.some(
+            trench => trench.getBounds().containsPoint(this.x, this.y)
+        );
     }
 
     toJSON() {

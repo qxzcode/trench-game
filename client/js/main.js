@@ -60,12 +60,13 @@ function applyEntityUpdate(updateInfo) {
     const { id } = updateInfo;
     if (soldiers.has(id)) {
         let soldier = soldiers.get(id);
-        const { x, y, heal } = updateInfo;
+        const { x, y, inTrench, heal } = updateInfo;
         if (heal) {
             soldier.heal();
         } else {
             soldier.x = x;
             soldier.y = y;
+            soldier.trench = inTrench;
         }
     } else if (healthKits.has(id)) {
         let healthKit = healthKits.get(id);

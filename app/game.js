@@ -28,6 +28,7 @@ export class Game {
         const circles = makeTeam(this, 'circles', 2, 10, 0, leftQuarterLine);
         const squares = makeTeam(this, 'squares', 2, 10, rightQuarterLine, sceneWidth);
         const allSoldiers = [...circles, ...squares];
+        allSoldiers.forEach(soldier => soldier.updateTrenchStatus(this));
         /** Map of soldiers by their ID */
         this.soldiers = new Map(allSoldiers.map(soldier => [soldier.id, soldier]));
 
@@ -138,13 +139,14 @@ export class Game {
                         const h2 = soldier.height / 2;
                         soldier.x = clamp(soldier.x, 0 + w2, sceneWidth - w2);
                         soldier.y = clamp(soldier.y, 0 + h2, sceneHeight - h2);
+                        soldier.updateTrenchStatus(this);
 
                         // add a client update
                         updates.push({
                             id: soldier.id,
                             x: soldier.x,
                             y: soldier.y,
-                            // TODO: update & send inTrench
+                            inTrench: soldier.inTrench,
                         });
                     }
                 }
@@ -156,11 +158,12 @@ export class Game {
         const h2 = selectedSoldier.height / 2;
         selectedSoldier.x = clamp(x, 0 + w2, sceneWidth - w2);
         selectedSoldier.y = clamp(y, 0 + h2, sceneHeight - h2);
+        selectedSoldier.updateTrenchStatus(this);
         updates.push({
             id: selectedSoldier.id,
             x: selectedSoldier.x,
             y: selectedSoldier.y,
-            // TODO: update & send inTrench
+            inTrench: selectedSoldier.inTrench,
         });
 
         // start a new turn and send the updated game state to all players

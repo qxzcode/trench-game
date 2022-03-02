@@ -50,18 +50,6 @@ export function getEvenOdd() {
     return Math.random() < 0.5;
 }
 
-// #region specific position/intersection checks
-
-/**
- * Returns true if `character` is in a trench.
- * @param {Entity} character
- */
-export function checkElevation(character) {
-    return trenches.some(trench => trench.containsPoint(character));
-}
-
-// #endregion
-
 /**
  * Calculates the vector heading in the direction of the mouse position, from
  * the position of the soldier sprite.
