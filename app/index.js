@@ -10,7 +10,7 @@ expressWs(app);
 app.use(express.static('client'));
 
 // Serve the websocket server on the /ws path
-const game = new Game();
+let nextGame = new Game();
 // @ts-ignore
 app.ws('/ws', (socket, request) => {
     console.log('socket connected');
@@ -20,11 +20,16 @@ app.ws('/ws', (socket, request) => {
             console.log('Message:', message);
             switch (message.type) {
                 case 'start':
-                    game.addPlayer(socket);
+                    // add the player to the game, or create a new game if that was full
+                    while (!nextGame.addPlayer(socket)) {
+                        nextGame = new Game();
+                    }
+
+                    // send the initial game state
                     socket.send(JSON.stringify({
                         type: 'init',
-                        data: game.toJSON(),
-                        gameTime: game.getCurrentTime(),
+                        data: nextGame.toJSON(),
+                        gameTime: nextGame.getCurrentTime(),
                     }));
                     break;
             }

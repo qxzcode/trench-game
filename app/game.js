@@ -7,6 +7,8 @@ function getRandomTeam() {
     return getEvenOdd() ? 'circles' : 'squares';
 }
 
+let nextGameID = 1;
+
 /**
  * Tracks the state of a game between two players.
  */
@@ -15,6 +17,9 @@ export class Game {
      * Generates a new game level.
      */
     constructor() {
+        this.gameID = nextGameID++;
+        console.log(`Creating game ${this.gameID}`);
+
         this._nextEntityID = 1;
 
         this.trenches = makeTrenches();
@@ -56,7 +61,7 @@ export class Game {
      * Starts the game.
      */
     start() {
-        console.log('Starting game');
+        console.log(`Starting game ${this.gameID}`);
         this.listenForPlayerActions(this.circlesSocket, 'circles');
         this.listenForPlayerActions(this.squaresSocket, 'squares');
     }
@@ -393,6 +398,10 @@ export class Game {
         return Number(nowNanos - this.timeOriginNanos) / 1e9;
     }
 
+    /**
+     * Adds a player to the game.
+     * Returns true if the player was added, false if the game is full.
+     */
     addPlayer(socket) {
         if (this.circlesSocket === null && this.squaresSocket === null) {
             // no players yet; assign the first player to a random team
@@ -401,17 +410,20 @@ export class Game {
             } else {
                 this.squaresSocket = socket;
             }
+            return true;
         } else if (this.circlesSocket === null) {
             // one player already; assign the second player to the other team
             this.circlesSocket = socket;
             this.start();
+            return true;
         } else if (this.squaresSocket === null) {
             // one player already; assign the second player to the other team
             this.squaresSocket = socket;
             this.start();
+            return true;
         } else {
             // two players already
-            throw new Error('addPlayer called on full game');
+            return false;
         }
     }
 
