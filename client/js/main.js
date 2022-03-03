@@ -399,10 +399,10 @@ function gameLoop() {
     }
     if (circlesAlive === 0) {
         // no more circles, so the squares win
-        endGame("SQUARES", soldiers);
+        endGame("SQUARES", soldiers.values());
     } else if (squaresAlive === 0) {
         // no more squares, so the circles win
-        endGame("CIRCLES", soldiers);
+        endGame("CIRCLES", soldiers.values());
     }
 }
 

@@ -15,17 +15,22 @@ const game = new Game();
 app.ws('/ws', (socket, request) => {
     console.log('socket connected');
     socket.on('message', (/** @type {string} */ msg) => {
-        const message = JSON.parse(msg);
-        console.log('Message:', message);
-        switch (message.type) {
-            case 'start':
-                game.addPlayer(socket);
-                socket.send(JSON.stringify({
-                    type: 'init',
-                    data: game.toJSON(),
-                    gameTime: game.getCurrentTime(),
-                }));
-                break;
+        try {
+            const message = JSON.parse(msg);
+            console.log('Message:', message);
+            switch (message.type) {
+                case 'start':
+                    game.addPlayer(socket);
+                    socket.send(JSON.stringify({
+                        type: 'init',
+                        data: game.toJSON(),
+                        gameTime: game.getCurrentTime(),
+                    }));
+                    break;
+            }
+        } catch (e) {
+            console.error(e);
+            console.error(e.stack);
         }
     });
     socket.on('close', () => {
