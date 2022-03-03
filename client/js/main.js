@@ -325,57 +325,9 @@ function gameLoop() {
 
     for (let b of bullets.values()) {
         b.move(gameTime);
-        continue;
-
-        if (b.y < -10 || b.y > sceneHeight + 10 || b.x < -10 || b.x > sceneWidth + 10) {
-            b.isActive = false; // Cleans up bullets outside the world
-        }
-
-        for (let w of walls) {
-            if (rectsIntersect(b, w)) {
-                bumpSound.play();
-                b.isActive = false;
-            }
-        }
-
-        if (b.trench == true) {
-            let inTrench = false;
-            for (let t of trenches) {
-                if (rectsIntersect(b, t)) {
-                    inTrench = true;
-                    break;
-                }
-            }
-            if (inTrench == false) {
-                bumpSound.play();
-                b.isActive = false;
-                gameScene.removeChild(b);
-            }
-        }
     }
 
     for (let soldier of soldiers.values()) {
-        // trench check
-        soldier.trench = checkElevation(soldier);
-
-        // bullet interactions
-        for (let bullet of bullets.values()) {
-            continue;
-            if (bullet.team !== soldier.team &&
-                soldier.trench === bullet.trench &&
-                rectsIntersect(soldier, bullet)
-            ) {
-                if (soldier.health === 3) {
-                    armorhitSound.play();
-                } else {
-                    injuryhitSound.play();
-                }
-                soldier.damage();
-                gameScene.removeChild(bullet);
-                bullet.isActive = false;
-            }
-        }
-
         // updating looks
         soldier.drawState();
 
