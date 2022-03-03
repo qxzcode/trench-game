@@ -173,6 +173,10 @@ class Bullet extends PIXI.Graphics {
      * @param {number} time
      */
     move(time) {
+        if (time > this.impactTime) {
+            // stop at the point of impact
+            time = this.impactTime;
+        }
         this.x = this.startX + this.forward.x * this.speed * (time - this.startTime);
         this.y = this.startY + this.forward.y * this.speed * (time - this.startTime);
     }
